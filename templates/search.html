@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}検索{% if q %} — {{ q }}{% endif %}｜{{ app_title }}{% endblock %}
+{% block content %}
+<section class="hero compact">
+  <h1>カード検索</h1>
+  <form class="search-form" action="/search" method="get">
+    <input type="search" name="q" value="{{ q }}" placeholder="カード名または番号">
+    <select name="set_id">
+      <option value="">すべてのセット</option>
+      {% for s in sets %}
+      <option value="{{ s.id }}" {% if set_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">検索</button>
+  </form>
+</section>
+
+{% if q or set_id %}
+<section class="section">
+  <p class="result-meta">
+    {% if q %}「{{ q }}」{% endif %}
+    {% if set_id %}（セット絞り込みあり）{% endif %}
+    — {{ total }}件{% if has_pagination %}（{{ page }}/{{ total_pages }}ページ）{% endif %}
+  </p>
+  {% if results %}
+  <div class="result-table-wrap">
+    <table class="result-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>カード名</th>
+          <th>セット</th>
+          <th>番号</th>
+          <th>最高買取</th>
+          <th>更新日</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for card in results %}
+        <tr>
+          <td class="thumb-cell">
+            {% if card.image_url %}
+            <img src="{{ card.image_url }}/low.webp" alt="" loading="lazy">
+            {% endif %}
+          </td>
+          <td><a href="/cards/{{ card.id }}">{{ card.name }}</a></td>
+          <td>{{ card.set_name }}</td>
+          <td>{{ card.local_id }}</td>
+          <td class="price">{% if card.best_price %}{{ card.best_price|yen }}{% else %}—{% endif %}</td>
+          <td class="muted">{{ card.latest_as_of or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if has_pagination %}
+  <nav class="pagination" aria-label="検索結果ページ">
+    {% if page > 1 %}
+    <a href="/search?{% if q %}q={{ q|urlencode }}&amp;{% endif %}{% if set_id %}set_id={{ set_id|urlencode }}&amp;{% endif %}page={{ page - 1 }}">← 前へ</a>
+    {% endif %}
+    <span class="muted">{{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/search?{% if q %}q={{ q|urlencode }}&amp;{% endif %}{% if set_id %}set_id={{ set_id|urlencode }}&amp;{% endif %}page={{ page + 1 }}">次へ →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+  <p class="empty">該当するカードがありません。別のキーワードや番号で試してください。</p>
+  {% endif %}
+</section>
+{% else %}
+<p class="empty">カード名や番号を入力して検索してください。</p>
+{% endif %}
+{% endblock %}

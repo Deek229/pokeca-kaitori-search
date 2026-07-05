@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<nav class="breadcrumb">
+
+  <a href="/">ホーム</a> ›
+
+  <a href="/search?set_id={{ card.set_id }}">{{ card.set_name }}</a> ›
+
+  {{ card.name }}
+
+</nav>
+
+
+
+<article class="card-detail">
+
+  <div class="card-detail-main">
+
+    <div class="card-image-wrap">
+
+      {% if card.image_url %}
+
+      <img src="{{ card.image_url }}/high.webp" alt="{{ card.name }}">
+
+      {% else %}
+
+      <div class="card-placeholder large">No Image</div>
+
+      {% endif %}
+
+    </div>
+
+    <div class="card-meta">
+
+      <h1>{{ card.name }}</h1>
+
+      <dl class="meta-list">
+
+        <div><dt>セット</dt><dd>{{ card.set_name }}</dd></div>
+
+        <div><dt>カード番号</dt><dd>{{ card.local_id }}{% if card.set_tcgdex_id %} / {{ card.set_tcgdex_id }}{% endif %}</dd></div>
+
+        {% if card.rarity %}<div><dt>レアリティ</dt><dd>{{ card.rarity }}</dd></div>{% endif %}
+
+        {% if card.best_price %}<div><dt>最高価格（最新）</dt><dd class="price">{{ card.best_price|yen }}</dd></div>{% endif %}
+
+      </dl>
+
+    </div>
+
+  </div>
+
+
+
+  <section class="section">
+
+    <div class="section-head">
+
+      <h2>ショップ別 価格</h2>
+
+      {% if card.latest_as_of %}
+
+      <span class="as-of-badge">価格更新日: {{ card.latest_as_of }}</span>
+
+      {% endif %}
+
+    </div>
+
+    <p class="muted small-note">フルコンプは買取表から自動取得。カードラッシュは cardrush.media 買取表から取得。メルカードは通販休業中（503）のため検索リンクのみ。Magi は C2C マーケットの<strong>最安出品価格（参考）</strong>です。</p>
+
+
+
+    {% if card.prices %}
+
+    <div class="price-table-wrap">
+
+      <table class="price-table">
+
+        <thead>
+
+          <tr>
+
+            <th>ショップ</th>
+
+            <th>価格</th>
+
+            <th>種別 / 状態</th>
+
+            <th>更新日</th>
+
+            <th>リンク</th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          {% for p in card.prices %}
+
+          <tr class="{% if p.has_price and p.price_yen == card.best_price %}best-row{% endif %}{% if p.is_reference %} reference-row{% endif %}">
+
+            <td><strong>{{ p.shop_name }}</strong>{% if p.is_reference %} <span class="ref-tag">参考</span>{% endif %}</td>
+
+            <td class="price">{% if p.has_price %}{{ p.price_yen|yen }}{% if p.price_yen == card.best_price %} <span class="best-tag">最高</span>{% endif %}{% else %}—{% endif %}</td>
+
+            <td>{% if p.is_reference %}Magi 参考価格{% else %}買取{% endif %}{% if p.has_price %} · {{ p.condition_note }}{% endif %}</td>
+
+            <td class="muted">{% if p.has_price %}{{ p.as_of_date }}{% else %}—{% endif %}</td>
+
+            <td>{% if p.product_url %}<a href="{{ p.product_url }}" target="_blank" rel="noopener">{% if p.is_search_link %}検索へ{% else %}ショップへ{% endif %}</a>{% else %}—{% endif %}</td>
+
+          </tr>
+
+          {% endfor %}
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    {% else %}
+
+    <p class="empty">価格データがまだありません。</p>
+
+    {% endif %}
+
+  </section>
+
+
+
+  <section class="section">
+
+    <div class="section-head">
+
+      <h2>価格推移</h2>
+
+    </div>
+
+    {% if card.has_price_chart %}
+
+    <div class="chart-wrap">
+
+      <canvas id="priceChart" aria-label="価格推移グラフ"></canvas>
+
+    </div>
+
+    <p class="muted small-note">履歴が<strong>2回以上</strong>ある場合に折れ線グラフを表示します。ショップごとに色分け（カードラッシュ=黄 / フルコンプ=緑 / Magi=紫・参考）。<strong>破線の「全店平均」</strong>は、その日に価格がある買取店舗（Magi 除く）の平均です。同日に再取得した場合も別の点として表示されます。</p>
+
+    {% elif card.price_history and card.chart_fetch_count == 1 %}
+
+    <p class="empty">グラフ表示には、あと<strong>1回</strong>価格取込が必要です（現在 {{ card.chart_fetch_count }} 件の履歴）。次回取込後はショップ別の線と<strong>全店平均</strong>（破線）が表示されます。</p>
+
+    {% elif card.price_history %}
+
+    <p class="empty">グラフ表示には、価格履歴が<strong>2件以上</strong>必要です（現在 {{ card.chart_fetch_count }} 件）。</p>
+
+    {% else %}
+
+    <p class="empty">価格履歴がまだありません。Magi 価格取込または全店舗価格取込を実行すると履歴が蓄積されます。</p>
+
+    {% endif %}
+
+  </section>
+
+</article>
+
+{% endblock %}
+
+
+
+{% block scripts %}
+
+{% if card.has_price_chart %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+
+(function () {
+
+  const chartData = {{ card.price_history_json|safe }};
+
+  const ctx = document.getElementById('priceChart');
+
+  if (!ctx || !chartData.datasets.length) return;
+
+
+
+  new Chart(ctx, {
+
+    type: 'line',
+
+    data: chartData,
+
+    options: {
+
+      responsive: true,
+
+      maintainAspectRatio: false,
+
+      plugins: {
+
+        legend: { labels: { color: '#f2f6ff', font: { family: '"M PLUS Rounded 1c", sans-serif' } } },
+
+        tooltip: {
+
+          callbacks: {
+
+            label: (item) => {
+
+              const v = item.parsed.y;
+
+              return v != null ? `${item.dataset.label}: ¥${v.toLocaleString('ja-JP')}` : `${item.dataset.label}: —`;
+
+            }
+
+          }
+
+        }
+
+      },
+
+      scales: {
+
+        x: {
+
+          title: { display: true, text: '取得日時', color: '#9aa8c7' },
+
+          ticks: { color: '#9aa8c7' },
+
+          grid: { color: 'rgba(255,255,255,0.06)' }
+
+        },
+
+        y: {
+
+          title: { display: true, text: '価格（円）', color: '#9aa8c7' },
+
+          ticks: {
+
+            color: '#9aa8c7',
+
+            callback: (v) => '¥' + Number(v).toLocaleString('ja-JP')
+
+          },
+
+          grid: { color: 'rgba(255,255,255,0.06)' }
+
+        }
+
+      }
+
+    }
+
+  });
+
+})();
+
+</script>
+
+{% endif %}
+
+{% endblock %}
+

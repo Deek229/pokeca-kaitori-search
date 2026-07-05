@@ -1,0 +1,21 @@
+# Render 公開用（https://render.com）
+# GitHub 連携後: Dashboard → New → Blueprint → このリポジトリを選択
+services:
+  - type: web
+    name: pokeca-kaitori-search
+    runtime: python
+    plan: free
+    # ビルド時に seed / 価格取得は実行しない（DB を消さないため）
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: SITE_URL
+        sync: false
+    # SQLite 永続化（有料プラン）を使う場合はコメントを外して disk を有効化
+    # disk:
+    #   name: pokeca-db
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1

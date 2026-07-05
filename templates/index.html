@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ app_title }} — 買取価格比較{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>ポケカ買取価格を比較</h1>
+  <p class="lead">{{ tagline }}</p>
+  <form class="search-form hero-search" action="/search" method="get">
+    <input type="search" name="q" placeholder="カード名（例: ピカチュウ）または番号（例: 025）" autofocus>
+    <button type="submit">検索</button>
+  </form>
+</section>
+
+{% if popular_cards %}
+<section class="section">
+  <h2>高額買取カード（サンプル）</h2>
+  <div class="card-grid">
+    {% for card in popular_cards %}
+    <a class="card-tile" href="/cards/{{ card.id }}">
+      {% if card.image_url %}
+      <img src="{{ card.image_url }}/low.webp" alt="{{ card.name }}" loading="lazy">
+      {% else %}
+      <div class="card-placeholder">No Image</div>
+      {% endif %}
+      <div class="card-tile-body">
+        <strong>{{ card.name }}</strong>
+        <span class="muted">{{ card.set_name }} {{ card.local_id }}</span>
+        {% if card.best_price %}
+        <span class="price-badge">最高 {{ card.best_price|yen }}</span>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <h2>収録セット（MVP）</h2>
+  <div class="set-list">
+    {% for s in sets %}
+    <div class="set-chip">
+      <strong>{{ s.name }}</strong>
+      <span class="muted">{{ s.card_count }}枚 · {{ s.release_date or '—' }}</span>
+      <a href="/search?set_id={{ s.id }}">このセットを見る</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section info-box">
+  <h2>比較対象ショップ（サンプル）</h2>
+  <ul>
+    <li>カードラッシュ（Card Rush）</li>
+    <li>メルカード（Mercari Card）</li>
+    <li>フルコンプ（FullComp）</li>
+    <li>Magi（C2C 参考価格）</li>
+  </ul>
+  <p class="muted">各カード詳細ページで4店舗の買取価格と更新日を横並び表示します。</p>
+</section>
+{% endblock %}

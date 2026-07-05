@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_title }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ tagline|default('ポケモンカードの買取価格を主要ショップで比較') }}{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="/">⚡ {{ app_title }}</a>
+      <nav class="nav">
+        <a href="/">ホーム</a>
+        <a href="/search">検索</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p class="disclosure">※ 買取価格はサンプルデータです。実際の価格は各ショップでご確認ください。</p>
+    <p><small>{{ app_title }} v0.1 · MVP</small></p>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
