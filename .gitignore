@@ -2,6 +2,7 @@
 data/*
 !data/cards.db
 !data/.gitkeep
+data/site_stats.json
 *.db
 !data/cards.db
 __pycache__/

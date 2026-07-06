@@ -16,11 +16,23 @@ from starlette.requests import Request
 
 from card_service import count_search_cards, get_card, list_sets, popular_cards, resolve_set_id, search_cards
 from config import APP_TAGLINE, APP_TITLE, APP_VERSION, DEFAULT_PORT, SITE_URL
+from site_stats import increment, should_count_page_view
 from templates_env import render
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 ROOT = Path(__file__).parent
 STATIC = ROOT / 'static'
+
+
+class AccessCountMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if should_count_page_view(
+            request.method,
+            request.url.path,
+            request.headers.get('user-agent'),
+        ):
+            increment()
+        return await call_next(request)
 
 
 class NoCacheHtmlMiddleware(BaseHTTPMiddleware):
@@ -33,6 +45,7 @@ class NoCacheHtmlMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(NoCacheHtmlMiddleware)
+app.add_middleware(AccessCountMiddleware)
 app.mount('/static', StaticFiles(directory=STATIC), name='static')
 
 

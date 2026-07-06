@@ -27,5 +27,15 @@ env.filters['tojson'] = _tojson
 env.filters['yen'] = _yen
 
 
+def _commas(value) -> str:
+    return f'{int(value):,}'
+
+
+env.filters['commas'] = _commas
+
+
 def render(template_name: str, **context) -> str:
+    from site_stats import get_total
+
+    context.setdefault('total_access_count', get_total())
     return env.get_template(template_name).render(**context)
